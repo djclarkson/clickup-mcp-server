@@ -61,3 +61,21 @@ export const getTaskDependenciesTool = {
     includeSubtasks: z.boolean().optional().describe('Whether to include dependencies of subtasks. Default is false.'),
   }).strict()
 };
+
+/**
+ * Tool definition for adding bulk dependencies
+ */
+export const addBulkDependenciesTool = {
+  name: 'add_bulk_dependencies',
+  description: `Adds multiple dependencies in a single operation. Efficient for setting up complex dependency chains between multiple tasks.`,
+  inputSchema: z.object({
+    dependencies: z.array(z.object({
+      taskId: z.string().describe('ID of the task that will have dependencies added'),
+      dependsOn: z.array(z.string()).describe('Array of task IDs that this task will depend on')
+    })).describe('Array of dependency configurations. Each item specifies a task and the tasks it should depend on.'),
+    options: z.object({
+      continueOnError: z.boolean().optional().describe('Whether to continue processing if a dependency fails to be created. Default is false.'),
+      retryCount: z.number().optional().describe('Number of retry attempts for failed operations. Default is 0.')
+    }).optional().describe('Optional processing settings for the bulk operation')
+  }).strict()
+};

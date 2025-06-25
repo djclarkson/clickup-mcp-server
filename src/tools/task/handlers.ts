@@ -47,6 +47,32 @@ const taskContextCache = new Map<string, { id: string, timestamp: number }>();
 const TASK_CONTEXT_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
+ * Extended ClickUpTask interface that includes dependency details
+ */
+interface ClickUpTaskWithDependencies extends ClickUpTask {
+  dependency_details?: {
+    waiting_on: Array<{
+      task_id: string;
+      task_name: string;
+      status: string;
+      list: {
+        id: string;
+        name: string;
+      };
+    }>;
+    blocking: Array<{
+      task_id: string;
+      task_name: string;
+      status: string;
+      list: {
+        id: string;
+        name: string;
+      };
+    }>;
+  };
+}
+
+/**
  * Store task context for sequential operations
  */
 function storeTaskContext(taskName: string, taskId: string) {
@@ -206,6 +232,44 @@ async function buildUpdateData(params: any): Promise<UpdateTaskData> {
 }
 
 /**
+ * Enhance task with dependency details
+ */
+async function enhanceTaskWithDependencies(task: ClickUpTask): Promise<ClickUpTaskWithDependencies> {
+  if (!task.dependencies || task.dependencies.length === 0) {
+    return {
+      ...task,
+      dependency_details: {
+        waiting_on: [],
+        blocking: []
+      }
+    };
+  }
+
+  try {
+    // Get dependency details from the dependency service
+    const depResponse = await taskService.getTaskDependencies({ taskId: task.id });
+    
+    if (depResponse.success && depResponse.data) {
+      return {
+        ...task,
+        dependency_details: depResponse.data.dependencies
+      };
+    }
+  } catch (error) {
+    logger.warn(`Failed to fetch dependency details for task ${task.id}:`, error);
+  }
+
+  // Return task with empty dependency details if fetch fails
+  return {
+    ...task,
+    dependency_details: {
+      waiting_on: [],
+      blocking: []
+    }
+  };
+}
+
+/**
  * Core function to find a task by ID or name
  * This consolidates all task lookup logic in one place for consistency
  */
@@ -215,9 +279,10 @@ async function findTask(params: {
   listName?: string,
   customTaskId?: string,
   requireId?: boolean,
-  includeSubtasks?: boolean
+  includeSubtasks?: boolean,
+  includeDependencies?: boolean
 }) {
-  const { taskId, taskName, listName, customTaskId, requireId = false, includeSubtasks = false } = params;
+  const { taskId, taskName, listName, customTaskId, requireId = false, includeSubtasks = false, includeDependencies = false } = params;
 
   // Validate that we have enough information to identify a task
   const validationResult = validateTaskIdentification(
@@ -232,7 +297,12 @@ async function findTask(params: {
   try {
     // Direct path for taskId - most efficient
     if (taskId) {
-      const task = await taskService.getTask(taskId);
+      let task = await taskService.getTask(taskId);
+
+      // Add dependencies if requested
+      if (includeDependencies) {
+        task = await enhanceTaskWithDependencies(task);
+      }
 
       // Add subtasks if requested
       if (includeSubtasks) {
@@ -245,7 +315,12 @@ async function findTask(params: {
 
     // Direct path for customTaskId - also efficient
     if (customTaskId) {
-      const task = await taskService.getTaskByCustomId(customTaskId);
+      let task = await taskService.getTaskByCustomId(customTaskId);
+
+      // Add dependencies if requested
+      if (includeDependencies) {
+        task = await enhanceTaskWithDependencies(task);
+      }
 
       // Add subtasks if requested
       if (includeSubtasks) {
@@ -264,10 +339,15 @@ async function findTask(params: {
       const allTasks = await taskService.getTasks(listId);
 
       // Find the task that matches the name
-      const matchingTask = findTaskByName(allTasks, taskName);
+      let matchingTask = findTaskByName(allTasks, taskName);
 
       if (!matchingTask) {
         throw new Error(`Task "${taskName}" not found in list "${listName}"`);
+      }
+
+      // Add dependencies if requested
+      if (includeDependencies) {
+        matchingTask = await enhanceTaskWithDependencies(matchingTask);
       }
 
       // Add subtasks if requested
@@ -339,7 +419,12 @@ async function findTask(params: {
         throw new Error(`Task "${taskName}" not found in any list across your workspace. Please check the task name and try again.`);
       }
 
-      const bestMatch = matchingTasks[0];
+      let bestMatch = matchingTasks[0];
+
+      // Add dependencies if requested
+      if (includeDependencies) {
+        bestMatch = await enhanceTaskWithDependencies(bestMatch);
+      }
 
       // Add subtasks if requested
       if (includeSubtasks) {
@@ -422,7 +507,8 @@ export async function getTaskHandler(params) {
       taskName: params.taskName,
       listName: params.listName,
       customTaskId: params.customTaskId,
-      includeSubtasks: params.subtasks
+      includeSubtasks: params.subtasks,
+      includeDependencies: params.includeDependencies !== false // Default to true
     });
 
     if (result.subtasks) {
@@ -526,7 +612,8 @@ export async function createTaskHandler(params) {
     tags,
     custom_fields,
     check_required_custom_fields,
-    assignees
+    assignees,
+    dependencies
   } = params;
 
   if (!name) throw new Error("Task name is required");
@@ -564,7 +651,30 @@ export async function createTaskHandler(params) {
     taskData.start_date_time = true;
   }
 
-  return await taskService.createTask(listId, taskData);
+  // Create the task first
+  const createdTask = await taskService.createTask(listId, taskData);
+
+  // Add dependencies after task creation if specified
+  if (dependencies && dependencies.waiting_on && dependencies.waiting_on.length > 0) {
+    logger.info(`Adding dependencies to created task ${createdTask.id}`);
+    
+    for (const dependsOnTaskId of dependencies.waiting_on) {
+      try {
+        await taskService.addTaskDependency({
+          taskId: createdTask.id,
+          dependsOnTaskId: dependsOnTaskId,
+          dependencyType: 'waiting_on'
+        });
+      } catch (error) {
+        logger.warn(`Failed to add dependency ${dependsOnTaskId} to task ${createdTask.id}:`, error);
+      }
+    }
+
+    // Fetch the updated task with dependencies
+    return await taskService.getTask(createdTask.id);
+  }
+
+  return createdTask;
 }
 
 export interface UpdateTaskParams extends UpdateTaskData {

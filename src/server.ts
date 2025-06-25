@@ -60,9 +60,11 @@ import {
   addTaskDependencyTool,
   removeTaskDependencyTool,
   getTaskDependenciesTool,
+  addBulkDependenciesTool,
   handleAddTaskDependency,
   handleRemoveTaskDependency,
-  handleGetTaskDependencies
+  handleGetTaskDependencies,
+  handleAddBulkDependencies
 } from "./tools/task/index.js";
 import {
   createListTool, handleCreateList,
@@ -198,6 +200,7 @@ export function configureServer() {
         addTaskDependencyTool,
         removeTaskDependencyTool,
         getTaskDependenciesTool,
+        addBulkDependenciesTool,
         createListTool,
         createListInFolderTool,
         getListTool,
@@ -325,6 +328,8 @@ export function configureServer() {
           return handleRemoveTaskDependency(params);
         case "get_task_dependencies":
           return handleGetTaskDependencies(params);
+        case "add_bulk_dependencies":
+          return handleAddBulkDependencies(params);
         case "create_document":
           return handleCreateDocument(params);
         case "get_document":

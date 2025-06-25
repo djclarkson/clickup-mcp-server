@@ -37,7 +37,8 @@ import {
 import {
   addTaskDependencyTool,
   removeTaskDependencyTool,
-  getTaskDependenciesTool
+  getTaskDependenciesTool,
+  addBulkDependenciesTool
 } from './dependency-operations.js';
 
 // Add this to your import statements at the top of the file
@@ -73,7 +74,8 @@ import {
 import {
   handleAddTaskDependency as addTaskDependencyHandler,
   handleRemoveTaskDependency as removeTaskDependencyHandler,
-  handleGetTaskDependencies as getTaskDependenciesHandler
+  handleGetTaskDependencies as getTaskDependenciesHandler,
+  handleAddBulkDependencies as addBulkDependenciesHandler
 } from './dependencies.js';
 
 // Import shared services
@@ -215,6 +217,11 @@ export const handleGetTaskDependencies = createHandlerWrapper(
   (response) => response
 );
 
+export const handleAddBulkDependencies = createHandlerWrapper(
+  addBulkDependenciesHandler,
+  (response) => response
+);
+
 //=============================================================================
 // TOOL DEFINITIONS AND HANDLERS EXPORT
 //=============================================================================
@@ -340,5 +347,9 @@ export const tools = [
   {
     definition: getTaskDependenciesTool,
     handler: getTaskDependenciesHandler
+  },
+  {
+    definition: addBulkDependenciesTool,
+    handler: addBulkDependenciesHandler
   }
 ];

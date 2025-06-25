@@ -40,7 +40,8 @@ export {
 export {
   addTaskDependencyTool,
   removeTaskDependencyTool,
-  getTaskDependenciesTool
+  getTaskDependenciesTool,
+  addBulkDependenciesTool
 } from './dependency-operations.js';
 
 // Re-export time tracking tools and handlers

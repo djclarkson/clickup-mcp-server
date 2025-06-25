@@ -154,6 +154,19 @@ export const createTaskTool = {
           ]
         },
         description: "Optional array of assignee user IDs (numbers), emails, or usernames to assign to the task."
+      },
+      dependencies: {
+        type: "object",
+        properties: {
+          waiting_on: {
+            type: "array",
+            items: {
+              type: "string"
+            },
+            description: "Array of task IDs that this task should depend on (waiting_on relationship)"
+          }
+        },
+        description: "Optional dependencies to create for this task. The task will be created first, then dependencies will be added."
       }
     }
   }
@@ -341,6 +354,10 @@ export const getTaskTool = {
       subtasks: {
         type: "boolean",
         description: "Whether to include subtasks in the response. Set to true to retrieve full details of all subtasks."
+      },
+      includeDependencies: {
+        type: "boolean",
+        description: "Whether to include detailed dependency information (waiting_on and blocking tasks). Defaults to true."
       }
     }
   }

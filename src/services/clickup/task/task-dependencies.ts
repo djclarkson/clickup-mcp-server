@@ -103,6 +103,25 @@ export interface GetTaskDependenciesParams {
 }
 
 /**
+ * Parameters for bulk dependency operations
+ */
+export interface BulkDependencyItem {
+  taskId: string;
+  dependsOn: string[]; // Array of task IDs
+}
+
+/**
+ * Parameters for adding bulk dependencies
+ */
+export interface AddBulkDependenciesParams {
+  dependencies: BulkDependencyItem[];
+  options?: {
+    continueOnError?: boolean;
+    retryCount?: number;
+  };
+}
+
+/**
  * Task Dependencies Service class
  */
 export class TaskServiceDependencies extends TaskServiceComments {
@@ -369,6 +388,100 @@ export class TaskServiceDependencies extends TaskServiceComments {
           ErrorCode.VALIDATION
         );
       }
+    }
+  }
+  
+  /**
+   * Add multiple dependencies in bulk
+   * @param params Bulk dependency parameters
+   * @returns ServiceResponse with results for each operation
+   */
+  async addBulkDependencies(params: AddBulkDependenciesParams): Promise<ServiceResponse<{
+    successful: Array<{ taskId: string; dependsOn: string; success: true }>;
+    failed: Array<{ taskId: string; dependsOn: string; error: string }>;
+    summary: { total: number; success: number; failed: number };
+  }>> {
+    try {
+      this.logOperation('addBulkDependencies', { 
+        count: params.dependencies.length,
+        options: params.options 
+      });
+      
+      const results = {
+        successful: [] as Array<{ taskId: string; dependsOn: string; success: true }>,
+        failed: [] as Array<{ taskId: string; dependsOn: string; error: string }>,
+        summary: { total: 0, success: 0, failed: 0 }
+      };
+      
+      // Process each dependency item
+      for (const depItem of params.dependencies) {
+        const { taskId, dependsOn } = depItem;
+        
+        // Process each dependency for this task
+        for (const dependsOnTaskId of dependsOn) {
+          results.summary.total++;
+          
+          try {
+            // Check for circular dependencies
+            await this.checkCircularDependency(taskId, dependsOnTaskId);
+            
+            // Create the dependency
+            const endpoint = `/task/${taskId}/dependency`;
+            await this.client.post(endpoint, {
+              depends_on: dependsOnTaskId,
+              dependency_type: 0 // waiting_on
+            });
+            
+            results.successful.push({
+              taskId,
+              dependsOn: dependsOnTaskId,
+              success: true
+            });
+            results.summary.success++;
+            
+          } catch (error: any) {
+            const errorMessage = error.message || 'Unknown error';
+            results.failed.push({
+              taskId,
+              dependsOn: dependsOnTaskId,
+              error: errorMessage
+            });
+            results.summary.failed++;
+            
+            // Stop processing if continueOnError is false
+            if (!params.options?.continueOnError) {
+              break;
+            }
+          }
+        }
+        
+        // Stop processing if we had an error and continueOnError is false
+        if (!params.options?.continueOnError && results.failed.length > 0) {
+          break;
+        }
+      }
+      
+      this.logOperation('addBulkDependencies', { 
+        success: true,
+        summary: results.summary
+      });
+      
+      return {
+        data: results,
+        success: true
+      };
+      
+    } catch (error) {
+      const serviceError = this.handleError(error, 'Failed to add bulk dependencies');
+      this.logOperation('addBulkDependencies', { 
+        error: serviceError.message,
+        params 
+      });
+      return {
+        data: null,
+        success: false,
+        error: serviceError
+      };
     }
   }
   

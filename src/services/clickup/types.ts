@@ -246,6 +246,9 @@ export interface CreateTaskData {
     id: string;
     value: any;
   }>;
+  dependencies?: {
+    waiting_on?: string[]; // Array of task IDs this task depends on
+  };
 }
 
 /**

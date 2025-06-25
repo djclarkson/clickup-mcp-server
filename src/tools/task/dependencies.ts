@@ -152,3 +152,49 @@ export async function handleGetTaskDependencies(params: GetTaskDependenciesParam
     };
   }
 }
+
+/**
+ * Handler for adding bulk dependencies
+ */
+export async function handleAddBulkDependencies(params: any): Promise<any> {
+  try {
+    logger.info('Adding bulk dependencies', { 
+      count: params.dependencies?.length,
+      options: params.options 
+    });
+    
+    // Validate parameters
+    if (!params.dependencies || !Array.isArray(params.dependencies) || params.dependencies.length === 0) {
+      throw new Error('Dependencies array is required and must not be empty');
+    }
+    
+    // Validate each dependency item
+    for (const dep of params.dependencies) {
+      if (!dep.taskId) {
+        throw new Error('Each dependency item must have a taskId');
+      }
+      if (!dep.dependsOn || !Array.isArray(dep.dependsOn) || dep.dependsOn.length === 0) {
+        throw new Error('Each dependency item must have a non-empty dependsOn array');
+      }
+    }
+    
+    // Call the service method
+    const result = await taskService.addBulkDependencies(params);
+    
+    if (!result.success) {
+      throw result.error || new Error('Failed to add bulk dependencies');
+    }
+    
+    logger.info('Bulk dependencies operation completed', { 
+      summary: result.data?.summary 
+    });
+    
+    return result.data;
+  } catch (error: any) {
+    logger.error('Failed to add bulk dependencies', { error: error.message, params });
+    throw {
+      error: `Failed to add bulk dependencies: ${error.message}`,
+      params: JSON.stringify(params)
+    };
+  }
+}
