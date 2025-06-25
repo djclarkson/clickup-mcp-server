@@ -56,7 +56,13 @@ import {
   handleStopTimeTracking,
   handleAddTimeEntry,
   handleDeleteTimeEntry,
-  handleGetCurrentTimeEntry
+  handleGetCurrentTimeEntry,
+  addTaskDependencyTool,
+  removeTaskDependencyTool,
+  getTaskDependenciesTool,
+  handleAddTaskDependency,
+  handleRemoveTaskDependency,
+  handleGetTaskDependencies
 } from "./tools/task/index.js";
 import {
   createListTool, handleCreateList,
@@ -189,6 +195,9 @@ export function configureServer() {
         addTimeEntryTool,
         deleteTimeEntryTool,
         getCurrentTimeEntryTool,
+        addTaskDependencyTool,
+        removeTaskDependencyTool,
+        getTaskDependenciesTool,
         createListTool,
         createListInFolderTool,
         getListTool,
@@ -310,6 +319,12 @@ export function configureServer() {
           return handleDeleteTimeEntry(params);
         case "get_current_time_entry":
           return handleGetCurrentTimeEntry(params);
+        case "add_task_dependency":
+          return handleAddTaskDependency(params);
+        case "remove_task_dependency":
+          return handleRemoveTaskDependency(params);
+        case "get_task_dependencies":
+          return handleGetTaskDependencies(params);
         case "create_document":
           return handleCreateDocument(params);
         case "get_document":
