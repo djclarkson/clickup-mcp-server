@@ -336,7 +336,22 @@ export async function handleCreateListInFolder(parameters: any) {
  * Retrieves details about a specific list
  */
 export async function handleGetList(parameters: any) {
-  const { listId, listName } = parameters;
+  // Debug logging to understand parameter passing
+  console.log('[DEBUG] handleGetList - Received parameters:', JSON.stringify(parameters, null, 2));
+  console.log('[DEBUG] handleGetList - Type of parameters:', typeof parameters);
+  console.log('[DEBUG] handleGetList - Parameters keys:', Object.keys(parameters || {}));
+  
+  // Handle potential double-wrapped parameters from MCP
+  let params = parameters;
+  if (parameters && typeof parameters === 'object' && 'parameters' in parameters) {
+    params = parameters.parameters;
+    console.log('[DEBUG] handleGetList - Found wrapped parameters, unwrapping:', JSON.stringify(params, null, 2));
+  }
+  
+  const { listId, listName } = params;
+  
+  console.log('[DEBUG] handleGetList - Extracted listId:', listId);
+  console.log('[DEBUG] handleGetList - Extracted listName:', listName);
   
   let targetListId = listId;
   

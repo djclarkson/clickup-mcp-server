@@ -733,6 +733,20 @@ export async function getWorkspaceTasksHandler(
   params: Record<string, any>
 ): Promise<Record<string, any>> {
   try {
+    // Debug logging to understand parameter passing
+    console.log('[DEBUG] getWorkspaceTasksHandler - Received params:', JSON.stringify(params, null, 2));
+    console.log('[DEBUG] getWorkspaceTasksHandler - Type of params:', typeof params);
+    console.log('[DEBUG] getWorkspaceTasksHandler - Params keys:', Object.keys(params || {}));
+    
+    // Handle potential double-wrapped parameters from MCP
+    let parameters = params;
+    if (params && typeof params === 'object' && 'parameters' in params) {
+      parameters = params.parameters;
+      console.log('[DEBUG] getWorkspaceTasksHandler - Found wrapped parameters, unwrapping:', JSON.stringify(parameters, null, 2));
+    }
+    
+    console.log('[DEBUG] getWorkspaceTasksHandler - list_ids value:', parameters.list_ids);
+    
     // Require at least one filter parameter
     const hasFilter = [
       'tags',
@@ -747,7 +761,9 @@ export async function getWorkspaceTasksHandler(
       'date_updated_lt',
       'due_date_gt',
       'due_date_lt'
-    ].some(key => params[key] !== undefined);
+    ].some(key => parameters[key] !== undefined);
+
+    console.log('[DEBUG] getWorkspaceTasksHandler - hasFilter:', hasFilter);
 
     if (!hasFilter) {
       throw new Error('At least one filter parameter is required (tags, list_ids, folder_ids, space_ids, statuses, assignees, or date filters)');
@@ -756,30 +772,30 @@ export async function getWorkspaceTasksHandler(
     // For workspace tasks, we'll continue to use the direct getWorkspaceTasks method
     // since it supports specific workspace-wide filters that aren't part of the unified findTasks
     const filters: ExtendedTaskFilters = {
-      tags: params.tags,
-      list_ids: params.list_ids,
-      folder_ids: params.folder_ids,
-      space_ids: params.space_ids,
-      statuses: params.statuses,
-      include_closed: params.include_closed,
-      include_archived_lists: params.include_archived_lists,
-      include_closed_lists: params.include_closed_lists,
-      archived: params.archived,
-      order_by: params.order_by,
-      reverse: params.reverse,
-      due_date_gt: params.due_date_gt,
-      due_date_lt: params.due_date_lt,
-      date_created_gt: params.date_created_gt,
-      date_created_lt: params.date_created_lt,
-      date_updated_gt: params.date_updated_gt,
-      date_updated_lt: params.date_updated_lt,
-      assignees: params.assignees,
-      page: params.page,
-      detail_level: params.detail_level || 'detailed',
-      subtasks: params.subtasks,
-      include_subtasks: params.include_subtasks,
-      include_compact_time_entries: params.include_compact_time_entries,
-      custom_fields: params.custom_fields
+      tags: parameters.tags,
+      list_ids: parameters.list_ids,
+      folder_ids: parameters.folder_ids,
+      space_ids: parameters.space_ids,
+      statuses: parameters.statuses,
+      include_closed: parameters.include_closed,
+      include_archived_lists: parameters.include_archived_lists,
+      include_closed_lists: parameters.include_closed_lists,
+      archived: parameters.archived,
+      order_by: parameters.order_by,
+      reverse: parameters.reverse,
+      due_date_gt: parameters.due_date_gt,
+      due_date_lt: parameters.due_date_lt,
+      date_created_gt: parameters.date_created_gt,
+      date_created_lt: parameters.date_created_lt,
+      date_updated_gt: parameters.date_updated_gt,
+      date_updated_lt: parameters.date_updated_lt,
+      assignees: parameters.assignees,
+      page: parameters.page,
+      detail_level: parameters.detail_level || 'detailed',
+      subtasks: parameters.subtasks,
+      include_subtasks: parameters.include_subtasks,
+      include_compact_time_entries: parameters.include_compact_time_entries,
+      custom_fields: parameters.custom_fields
     };
 
     // Get tasks with adaptive response format support
