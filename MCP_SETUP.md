@@ -1,49 +1,65 @@
-# ClickUp MCP Server Setup for Claude Code
+# ClickUp MCP Server Setup
 
-## Installation Complete ✅
+This guide helps you set up the ClickUp MCP Server for use with Claude Desktop.
 
-The ClickUp MCP server is now globally accessible at:
-`/opt/homebrew/bin/clickup-mcp-server`
+## Prerequisites
 
-## For Other Claude Code Instances
+- Node.js 18+ installed
+- ClickUp API key from [ClickUp Settings](https://app.clickup.com/settings/apps)
+- Team ID from your ClickUp workspace URL
 
-To use this MCP server in other Claude Code instances, add the following to your Claude Code configuration:
+## Installation Options
+
+### Option 1: NPM Package (Recommended)
+
+Use the published npm package:
 
 ```json
 {
   "mcpServers": {
-    "clickup": {
-      "command": "clickup-mcp-server",
-      "args": [],
+    "ClickUp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@djclarkson/clickup-mcp-server@latest"
+      ],
       "env": {
-        "CLICKUP_API_KEY": "pk_60741432_FFER7MJVE0PASA53I2KKVNJVLF2UM1U5",
-        "CLICKUP_TEAM_ID": "9003065917"
+        "CLICKUP_API_KEY": "your-api-key-here",
+        "CLICKUP_TEAM_ID": "your-team-id-here",
+        "DOCUMENT_SUPPORT": "true"
       }
     }
   }
 }
 ```
 
-## Alternative: Direct Path Usage
+### Option 2: Local Development
 
-If you prefer not to use the global command, you can reference the local build directly:
+For local development, use the built version directly:
 
 ```json
 {
   "mcpServers": {
-    "clickup": {
+    "ClickUp": {
       "command": "node",
-      "args": ["/Users/davidclarkson/Documents/upDev/clickup-mcp-server/build/index.js"],
+      "args": ["/path/to/clickup-mcp-server/build/index.js"],
       "env": {
-        "CLICKUP_API_KEY": "pk_60741432_FFER7MJVE0PASA53I2KKVNJVLF2UM1U5",
-        "CLICKUP_TEAM_ID": "9003065917"
+        "CLICKUP_API_KEY": "your-api-key-here",
+        "CLICKUP_TEAM_ID": "your-team-id-here",
+        "DOCUMENT_SUPPORT": "true"
       }
     }
   }
 }
 ```
 
-## Notes
-- The server is installed globally via `npm link`
-- Node version warning can be ignored (v24 works fine despite the package requiring <v23)
-- Document support is enabled by default
+## Configuration
+
+- Replace `your-api-key-here` with your actual ClickUp API key
+- Replace `your-team-id-here` with your actual ClickUp team ID
+- Set `DOCUMENT_SUPPORT` to `"true"` if you want document management features
+
+## Testing
+
+After setup, restart Claude Desktop and test with a simple command:
+"Show me my ClickUp workspace structure"

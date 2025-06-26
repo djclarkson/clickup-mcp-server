@@ -39,3 +39,11 @@ checklist.md
 # Temporary files
 .tmp/
 .temp/
+
+# Development files (not for publishing)
+.development-files/
+.claude/
+*.local.json
+*-config.json
+test-*.md
+draft-*.md
