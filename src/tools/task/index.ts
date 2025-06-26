@@ -36,6 +36,14 @@ export {
   getWorkspaceTasksTool
 } from './workspace-operations.js';
 
+// Re-export dependency operation tools
+export {
+  addTaskDependencyTool,
+  removeTaskDependencyTool,
+  getTaskDependenciesTool,
+  addBulkDependenciesTool
+} from './dependency-operations.js';
+
 // Re-export time tracking tools and handlers
 export {
   getTaskTimeEntriesTool,

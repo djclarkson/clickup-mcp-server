@@ -9,13 +9,13 @@
  * - Removing tags from a task
  */
 
-import { TaskServiceComments } from './task-comments.js';
+import { TaskServiceDependencies } from './task-dependencies.js';
 import { ClickUpTag } from '../types.js';
 
 /**
  * Tags functionality for the TaskService
  */
-export class TaskServiceTags extends TaskServiceComments {
+export class TaskServiceTags extends TaskServiceDependencies {
   /**
    * Add a tag to a task
    * 

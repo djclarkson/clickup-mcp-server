@@ -34,6 +34,13 @@ import {
   getWorkspaceTasksTool
 } from './workspace-operations.js';
 
+import {
+  addTaskDependencyTool,
+  removeTaskDependencyTool,
+  getTaskDependenciesTool,
+  addBulkDependenciesTool
+} from './dependency-operations.js';
+
 // Add this to your import statements at the top of the file
 import {
   getWorkspaceMembersTool,
@@ -62,6 +69,14 @@ import {
   getWorkspaceTasksHandler,
   formatTaskData
 } from './index.js';
+
+// Import dependency handlers
+import {
+  handleAddTaskDependency as addTaskDependencyHandler,
+  handleRemoveTaskDependency as removeTaskDependencyHandler,
+  handleGetTaskDependencies as getTaskDependenciesHandler,
+  handleAddBulkDependencies as addBulkDependenciesHandler
+} from './dependencies.js';
 
 // Import shared services
 import { clickUpServices } from '../../services/shared.js';
@@ -184,6 +199,30 @@ export const handleGetWorkspaceTasks = createHandlerWrapper(
 );
 
 //=============================================================================
+// TASK DEPENDENCY OPERATIONS - HANDLER IMPLEMENTATIONS
+//=============================================================================
+
+export const handleAddTaskDependency = createHandlerWrapper(
+  addTaskDependencyHandler,
+  (response) => response
+);
+
+export const handleRemoveTaskDependency = createHandlerWrapper(
+  removeTaskDependencyHandler,
+  (response) => response
+);
+
+export const handleGetTaskDependencies = createHandlerWrapper(
+  getTaskDependenciesHandler,
+  (response) => response
+);
+
+export const handleAddBulkDependencies = createHandlerWrapper(
+  addBulkDependenciesHandler,
+  (response) => response
+);
+
+//=============================================================================
 // TOOL DEFINITIONS AND HANDLERS EXPORT
 //=============================================================================
 
@@ -296,5 +335,21 @@ export const tools = [
   {
     definition: resolveAssigneesTool,
     handler: handleResolveAssignees
+  },
+  {
+    definition: addTaskDependencyTool,
+    handler: addTaskDependencyHandler
+  },
+  {
+    definition: removeTaskDependencyTool,
+    handler: removeTaskDependencyHandler
+  },
+  {
+    definition: getTaskDependenciesTool,
+    handler: getTaskDependenciesHandler
+  },
+  {
+    definition: addBulkDependenciesTool,
+    handler: addBulkDependenciesHandler
   }
 ];

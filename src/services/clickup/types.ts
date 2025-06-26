@@ -200,7 +200,7 @@ export interface ClickUpTask {
   time_estimate: number | null;
   time_spent: number | null;
   custom_fields: Record<string, any>;
-  dependencies: string[];
+  dependencies: any[]; // Can be string[] or TaskDependency[]
   linked_tasks: string[];
   team_id: string;
   list: {
@@ -246,6 +246,9 @@ export interface CreateTaskData {
     id: string;
     value: any;
   }>;
+  dependencies?: {
+    waiting_on?: string[]; // Array of task IDs this task depends on
+  };
 }
 
 /**
