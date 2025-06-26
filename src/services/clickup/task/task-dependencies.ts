@@ -25,11 +25,12 @@ export type DependencyType = 'waiting_on' | 'blocking';
 export interface TaskDependency {
   task_id: string;
   depends_on: string;
-  dependency_of: string;
+  dependency_of?: string;
   date_created: string;
   userid: string;
   workspace_id: string;
   type: number; // 0 = waiting_on, 1 = blocking
+  chain_id?: string | null;
 }
 
 /**
@@ -159,24 +160,31 @@ export class TaskServiceDependencies extends TaskServiceComments {
       // Check for circular dependencies
       await this.checkCircularDependency(taskId, dependsOnTaskId);
       
-      // Create the dependency
-      const dependencyType = params.dependencyType || 'waiting_on';
-      const endpoint = `/task/${taskId}/dependency`;
+      // Create the dependency using the correct API endpoint
+      // ClickUp API uses /task/{task_id}/link/{depends_on_id}
+      const endpoint = `/task/${taskId}/link/${dependsOnTaskId}`;
       
-      const response = await this.client.post<TaskDependency>(endpoint, {
-        depends_on: dependsOnTaskId,
-        dependency_type: dependencyType === 'waiting_on' ? 0 : 1
-      });
+      const response = await this.client.post(endpoint, {});
       
       this.logOperation('addTaskDependency', { 
         success: true, 
         taskId, 
-        dependsOnTaskId,
-        type: dependencyType 
+        dependsOnTaskId
       });
       
+      // The API returns the updated task, extract the dependency that was added
+      const addedDependency: TaskDependency = {
+        task_id: taskId,
+        depends_on: dependsOnTaskId,
+        type: 1, // waiting_on
+        date_created: new Date().getTime().toString(),
+        userid: '', // Will be filled by API
+        workspace_id: this.teamId,
+        chain_id: null
+      };
+      
       return {
-        data: response.data,
+        data: addedDependency,
         success: true
       };
     } catch (error) {
@@ -224,13 +232,11 @@ export class TaskServiceDependencies extends TaskServiceComments {
         );
       }
       
-      // Remove the dependency
-      const endpoint = `/task/${taskId}/dependency`;
-      const queryParams = new URLSearchParams({
-        depends_on: dependencyTaskId
-      });
+      // Remove the dependency using the correct API endpoint
+      // ClickUp API uses DELETE /task/{task_id}/link/{depends_on_id}
+      const endpoint = `/task/${taskId}/link/${dependencyTaskId}`;
       
-      await this.client.delete(`${endpoint}?${queryParams}`);
+      await this.client.delete(endpoint);
       
       this.logOperation('removeTaskDependency', { 
         success: true, 
@@ -298,22 +304,35 @@ export class TaskServiceDependencies extends TaskServiceComments {
       };
       
       // Get detailed information for each dependency
-      if (task.dependencies && task.dependencies.length > 0) {
-        for (const depId of task.dependencies) {
-          const depTask = await this.getTask(depId);
-          if (depTask) {
-            const depInfo: TaskDependencyInfo = {
-              task_id: depTask.id,
-              task_name: depTask.name,
-              status: depTask.status.status,
-              list: {
-                id: depTask.list.id,
-                name: depTask.list.name
+      // Dependencies in ClickUp are stored as an array of objects
+      if (task.dependencies && Array.isArray(task.dependencies) && task.dependencies.length > 0) {
+        // Process each dependency object
+        for (const dep of task.dependencies) {
+          // Check if this is a "waiting_on" dependency (this task depends on another)
+          if (dep.task_id === task.id && dep.depends_on) {
+            try {
+              const depTask = await this.getTask(dep.depends_on);
+              if (depTask) {
+                const depInfo: TaskDependencyInfo = {
+                  task_id: depTask.id,
+                  task_name: depTask.name,
+                  status: depTask.status.status,
+                  list: {
+                    id: depTask.list.id,
+                    name: depTask.list.name
+                  }
+                };
+                dependencies.dependencies.waiting_on.push(depInfo);
               }
-            };
-            dependencies.dependencies.waiting_on.push(depInfo);
+            } catch (error) {
+              this.logger.warn(`Failed to get dependency task ${dep.depends_on}:`, error);
+            }
           }
         }
+        
+        // To find blocking dependencies, we need to search for tasks that depend on this one
+        // This would require searching all tasks, which is expensive
+        // For now, we'll leave blocking empty unless specifically implemented
       }
       
       // Include subtask dependencies if requested
